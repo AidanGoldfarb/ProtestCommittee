@@ -9,9 +9,20 @@ and where the method can be improved.
 The companion toolkit referenced throughout lives beside this file:
 `rrs_geometry.py`, `committee.py`, `audit.py`, `test_protest.py`.
 
-Authoritative reference material (Section 0.1), in the `references/` subfolder:
-`WS-Case-Book-2025-2028.pdf`, `casebook_parsed.json`, `CASEBOOK_REFERENCE.md`,
-`APPENDIX_M_principles.md`.
+Authoritative reference material (Section 0.1) lives in the `references/`
+subfolder. Only `APPENDIX_M_principles.md` is committed. The World Sailing Case
+Book files (`WS-Case-Book-2025-2028.pdf`, `casebook_parsed.json`,
+`CASEBOOK_REFERENCE.md`) are copyrighted and are **generated locally** with
+`references/build_casebook.py` — see `references/README.md`.
+
+**Glossary** (used throughout):
+- **RRS** — the Racing Rules of Sailing, 2025–2028 edition.
+- **ROW** — right of way; the "ROW boat" is the one the other must keep clear of.
+- **OCS** — On the Course Side: a boat whose bow is over the start line at the
+  starting signal (Rule 22 event in the replay).
+- **DSQ** — disqualified.
+- **Regattatron** — the browser sailing-racing game whose rules engine this
+  toolkit audits. Site paths below (e.g. `/debrief`) are relative to its host.
 
 ---
 
@@ -35,7 +46,8 @@ Authoritative reference material (Section 0.1), in the `references/` subfolder:
 
 ## 0.1 Reference sources — consult on every review
 
-Two authoritative sources govern how incidents are judged. Use both; a verdict
+Three sources govern how incidents are judged: the rule text, the procedure a
+committee follows, and the published interpretations. Use all three; a verdict
 cites the rule **and** the interpretation.
 
 1. **The rule text (RRS 2025–2028).** The letter of each rule, browseable at
@@ -64,7 +76,8 @@ cites the rule **and** the interpretation.
 3. Apply the case's interpretation to the found facts.
 4. **Cite the rule and the case number(s)** in the verdict.
 
-Worked relevance: for the start-line Rule 11-vs-16 question (Case C, Section 10),
+Worked relevance: for the start-line Rule 11-vs-16 question (Case C in the
+worked case studies, Section 10),
 the directly on-point cases are **CASE 13** (before the start, a leeward boat may
 sail above a close-hauled course / higher than proper course — there is no proper
 course before starting, but rule 16 still applies), **CASE 46** (a leeward boat
@@ -78,13 +91,18 @@ that incident against these cases is the correct next pass.
 
 ## 1. Fetching a replay
 
+**If you already have a replay blob as a JSON file, skip to Section 2.** This
+section is only about getting the blob out of the Regattatron web app, and it is
+the most environment-specific (and most brittle) part of the method.
+
 ### 1.1 Prerequisites
 - A **logged-in account with Pro** enabled. Pro is required for the full
   per-race debrief replay (the tick-level data). Without it you only get summary
   pages.
-- The **built-in browser pane** (or any controlled browser) with a persistent,
-  signed-in session on the site. The agent cannot type passwords; a human logs
-  in once in the pane, after which the session persists.
+- A **scriptable browser** with a persistent, signed-in session on the site
+  (for an AI agent, the Claude desktop app's built-in browser pane; for a human,
+  the normal devtools console works). The agent cannot type passwords; a human
+  logs in once, after which the session persists.
 
 ### 1.2 Procedure
 1. Request site access for the pane if gated, then navigate to the **Debrief
@@ -129,6 +147,7 @@ that incident against these cases is the correct next pass.
    ```python
    # in the analysis environment:
    import base64, gzip, re, json
+   # transferred_text = whatever string the browser tool returned for window.__b64
    b64 = re.search(r'(H4sI[A-Za-z0-9+/=]+)', transferred_text).group(1)  # gzip magic
    blob = json.loads(gzip.decompress(base64.b64decode(b64)))
    ```
@@ -222,8 +241,9 @@ Top-level keys and meaning:
 ## 4. Locating and classifying the incident
 
 1. Decode the blob (Section 1). Build `names = {slot: displayName}`.
-2. Print `events` with `idx = round(tMs/1000)`, the rule, offender, counterparty,
-   and `markId`. This is the list of things to audit.
+2. Print `events` with `idx = round(tMs / sampleIntervalSimMs)` (Section 3 —
+   verify the sample's `tMs` matches; do not hardcode 1000), the rule, offender,
+   counterparty, and `markId`. This is the list of things to audit.
 3. To find a specific incident ("foul on the line", "first windward rounding"):
    - **At the start:** filter events near `gunElapsedMs`; OCS and early
      Part-2/31 events cluster there.
@@ -259,12 +279,18 @@ the current mark.
 For each `INFRACTION`/`OCS` event, route to the rule assessor, compute the frame
 state, and decide **who had the keep-clear obligation** vs **who the engine
 charged**:
-- Rule 10 (opposite tacks): port keeps clear of starboard.
+- Rule 10 (opposite tacks): port keeps clear of starboard. In each rule the
+  "keep-clear" boat is the one that must avoid the right-of-way (ROW) boat.
 - Rule 11 (same tack, overlapped): windward keeps clear of leeward.
 - Rule 12 (same tack, not overlapped): clear-astern boat keeps clear.
 - Rule 22 (OCS): bow on the course side of the start line at `gunElapsedMs`.
 Output `AGREE` if the engine's offender == the committee's keep-clear boat,
 `DISAGREE` otherwise, `UNDETERMINED` if not adjudicable from state.
+
+**The toolkit produces only the AGREE / DISAGREE / UNDETERMINED assignment
+check and its numeric basis.** The written verdict below is composed by the
+reviewer (human or agent) from that output plus the case research in
+Section 0.1; nothing in `audit.py` emits it.
 
 **Verdict format (every reviewed incident):** state (a) the found facts with
 numbers — times, distances, speeds, tack, overlap Yes/No (Appendix M); (b) the

@@ -63,10 +63,10 @@ OCS bow model against the engine's own gun-line calls.
 ## Result on race cacbaec5 (8 flagged incidents)
 
 ```
-AGREE        OCS 22     Yahooz        (bow over at gun)
-AGREE        OCS 22     trim.on       (bow over at gun)
-AGREE        R11        ViperMamboKings windward of Cam
-AGREE        R10        Johnny (port) vs zinger (starboard)
+AGREE        OCS 22     boat A          (bow over at gun)
+AGREE        OCS 22     boat B          (bow over at gun)
+AGREE        R11        boat C windward of boat D
+AGREE        R10        boat E (port) vs boat F (starboard)
 UNDETERMINED R31 x2     mark touch — needs contact model
 UNDETERMINED R11        engine event had no counterparty slot
 UNDETERMINED R18        mark-room — needs time window
@@ -75,6 +75,7 @@ UNDETERMINED R18        mark-room — needs time window
 
 Zero disagreements on this sample, as expected for a shipped engine; the value
 is the method and the fact that every UNDETERMINED maps to a concrete data gap.
+Boats are referred to by role, not player identity (methodology §10).
 
 ## Limitations / what to ask the game's author for
 

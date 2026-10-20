@@ -16,6 +16,9 @@ and the facts, so the core is symbolic geometry, not ML.
 - `PROTEST_COMMITTEE_METHODOLOGY.md` — the full runbook: how replays are fetched
   and analyzed, conventions, what is/ isn't adjudicable, verification, limits,
   and the improvement backlog. **Read this first.**
+- `README.md` — short public overview (rule coverage table, sample result).
+  It repeats the conventions and file table; the methodology is the source of
+  truth. When conventions change, update all three documents together.
 - `references/` — rulebook/casebook material. `APPENDIX_M_principles.md` is
   committed. The World Sailing Case Book files are **not** committed (copyright);
   build them locally with `references/build_casebook.py`.
