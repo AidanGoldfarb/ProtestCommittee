@@ -33,8 +33,8 @@ Run: `pytest -q` then `python audit.py <blob.json>`.
   `w≈345`, the close-hauled fleet split into heading clusters ~300° and ~30°,
   i.e. ±45° around the wind axis.
 - `(x,y)` is the hull **centroid**; the start line is judged at the **bow**
-  (`centroid + L/2` along heading). Cross-checked on race cacbaec5: the bow
-  model reproduces all four gun-line calls that the centroid alone gets wrong.
+  (`centroid + L/2` along heading). Cross-checked on real replay data: the bow
+  model reproduces every gun-line OCS call that the centroid alone gets wrong.
 
 ## Rule coverage
 
@@ -60,22 +60,32 @@ engine (which would be circular). `test_protest.py` builds explicit incidents
 and asserts the expected ROW assignment. One real-data test corroborates the
 OCS bow model against the engine's own gun-line calls.
 
-## Result on race cacbaec5 (8 flagged incidents)
+## Output
 
-```
-AGREE        OCS 22     boat A          (bow over at gun)
-AGREE        OCS 22     boat B          (bow over at gun)
-AGREE        R11        boat C windward of boat D
-AGREE        R10        boat E (port) vs boat F (starboard)
-UNDETERMINED R31 x2     mark touch — needs contact model
-UNDETERMINED R11        engine event had no counterparty slot
-UNDETERMINED R18        mark-room — needs time window
-=> 4 AGREE, 0 DISAGREE, 4 UNDETERMINED
-```
+For each flagged event the audit prints `AGREE`, `DISAGREE` or `UNDETERMINED`
+with the numeric basis (tack, overlap, bow-to-line distance, assumed hull
+length). Every `UNDETERMINED` names the concrete data gap that would make the
+incident adjudicable. Boats are referred to by slot or role, never by player
+identity (methodology §10).
 
-Zero disagreements on this sample, as expected for a shipped engine; the value
-is the method and the fact that every UNDETERMINED maps to a concrete data gap.
-Boats are referred to by role, not player identity (methodology §10).
+## References — every verdict cites the rule and the case
+
+The geometry only establishes the facts. A verdict is then written against
+credible, authoritative sources (methodology §0.1):
+
+1. **The rule text** — RRS 2025–2028, Part 2 (rules 10–24) plus 31, 43 and 44.
+   Not bundled; fetch the exact wording from
+   https://www.racingrulesofsailing.org/rules when it matters.
+2. **Appendix M** (Recommendations for Protest Committees) — how a committee
+   operates: presume no breach until established, find facts definitely, respect
+   the limits of replay evidence. Distilled in `references/APPENDIX_M_principles.md`.
+3. **The World Sailing Case Book 2025–2028** — the official interpretations
+   that decide close calls (e.g. Cases 13, 46, 92 and 147 for a start-line
+   Rule 11 vs 16 question). It is World Sailing copyright, so it is not
+   committed; build the local rule→case index and parsed text with
+   `python references/build_casebook.py` (see `references/README.md`).
+
+A verdict without a rule number and an on-point case number is incomplete.
 
 ## Limitations / what to ask the game's author for
 
@@ -87,8 +97,8 @@ Boats are referred to by role, not player identity (methodology §10).
 3. **Finer timing.** The debrief replay is ~1 Hz. The native sim tick rate
    (and the `flags`/`sail` fields the replay drops) would sharpen OCS-at-the-gun
    and mark-rounding windows.
-4. **Counterparty on every event.** The reciprocal Rule 11 event (slot 9) had
-   no `counterpartySlot`; with it, that case becomes adjudicable.
+4. **Counterparty on every event.** Some `INFRACTION` events carry no
+   `counterpartySlot`; without it the incident cannot be placed geometrically.
 5. **The engine's own rule logic + constants** (zone test, overlap definition,
    proper-course model) — to compare against, rather than infer.
 
