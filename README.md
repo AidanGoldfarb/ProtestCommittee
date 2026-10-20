@@ -27,14 +27,19 @@ Run: `pytest -q` then `python audit.py <blob.json>`.
 
 ## Conventions (verified from data, not assumed)
 
-- `(x,y)` metres; `+y` is upwind (toward the windward mark).
+- `(x,y)` are **game units** (the schema says metres, but the drawn hull is 24
+  units long); report distances in units and hull lengths. `+y` is upwind.
 - `hdg`, `w` are compass degrees: `0 = +y`, `90 = +x`, clockwise.
 - `w` is the direction the wind blows **from** — confirmed: at a frame with
   `w≈345`, the close-hauled fleet split into heading clusters ~300° and ~30°,
   i.e. ±45° around the wind axis.
-- `(x,y)` is the hull **centroid**; the start line is judged at the **bow**
-  (`centroid + L/2` along heading). Cross-checked on real replay data: the bow
-  model reproduces every gun-line OCS call that the centroid alone gets wrong.
+- `(x,y)` is the boat's **position point**, not the centroid: the bow is 14 u
+  ahead of it and the stern 10 u behind (measured from the replay viewer's hull
+  sprite). Lines, marks and the zone are judged at the bow; overlap at stern vs
+  bow. A bow model reproduces every gun-line OCS call that the position point
+  alone gets wrong.
+- **Diagrams are live replay-viewer captures with overlays**, never generated
+  images (methodology §6).
 
 ## Rule coverage
 
@@ -89,9 +94,10 @@ A verdict without a rule number and an on-point case number is incomplete.
 
 ## Limitations / what to ask the game's author for
 
-1. **Hull dimensions.** No boat length/beam in the replay. `L ≈ 33.6 m` is
-   inferred from `zoneRadiusM / 3` and corroborated by the OCS bow model, but
-   confirm it. Needed for overlap (11/12/18) and all contact rules (14/31).
+1. **Hull dimensions and unit scale.** The replay carries neither. The hull is
+   measured from the viewer's sprite (24 u long, bow +14 / stern −10, beam 10 u);
+   confirm the rules engine uses the same, and what real length one unit is.
+   Do not derive hull length from the zone radius (the game's zone is 4.2 BL).
 2. **Contact geometry.** `MARK_TOUCH` / Rule 14 need actual hull polygons or a
    collision radius; positions alone can't confirm contact.
 3. **Finer timing.** The debrief replay is ~1 Hz. The native sim tick rate

@@ -21,6 +21,9 @@ Book files (`WS-Case-Book-2025-2028.pdf`, `casebook_parsed.json`,
 - **OCS** — On the Course Side: a boat whose bow is over the start line at the
   starting signal (Rule 22 event in the replay).
 - **DSQ** — disqualified.
+- **u** — a game unit. The replay labels positions "metres" but the unit is not
+  a real metre for the class modelled (Section 3). **BL** — hull length, 24 u.
+  Verdicts state distances in u and BL, never in real-world metres.
 - **Regattatron** — the browser sailing-racing game whose rules engine this
   toolkit audits. Site paths below (e.g. `/debrief`) are relative to its host.
 
@@ -155,7 +158,65 @@ the most environment-specific (and most brittle) part of the method.
    The `H4sI…` regex robustly recovers the base64 even if the transfer wraps it
    in quotes/whitespace.
 
-### 1.3 Improvement opportunities (fetch)
+### 1.2.1 Getting data out when the browser tool caps its output
+The Chrome tool truncates a JavaScript result at roughly 1 000 characters and
+refuses results that look like base64. Neither chunking nor compression helps.
+What works: write the text into the page and read it back with the page-text
+tool, which has a far larger limit:
+
+```js
+// in the page: lines = array of JSON strings, one sample per line
+const art = document.createElement('article'); art.id = '__dump';
+const pre = document.createElement('pre');
+pre.textContent = 'DUMPSTART\n' + lines.join('\n') + '\nDUMPEND';
+art.appendChild(pre); document.body.prepend(art);
+// then call get_page_text; it returns the <article> in full. Remove it after.
+```
+
+A 260-sample window for two boats (~40 kB) came through in one call. Keep the
+dump to the slots and window you need; the whole blob is ~1.5 MB.
+
+### 1.3 The replay viewer (`/race/<id>/replay`) — the source of every diagram
+The debrief page links to **Full replay**. This viewer is the authoritative
+picture of an incident and the only acceptable source of diagrams in a ruling
+(Section 6). It is a PixiJS scene inside a React page. Everything below was
+verified on race `4ec6514d`.
+
+- **Controls:** a "Choose a boat to follow" button per boat (camera then tracks
+  that boat's position point), Zoom in / Zoom out buttons (×1.25 per click),
+  a play/pause button, playback speed, and a scrub bar
+  (`div[role=slider][aria-label="Scrub replay"]`, `aria-valuenow` in **wall
+  milliseconds**, `aria-valuemax` = duration).
+- **Seeking precisely:** the scrub bar's React parent has an `onSeek(wallMs)`
+  prop. Walk the fiber up from the slider until `memoizedProps.onSeek` exists
+  and call it. Pause first or the position drifts.
+- **Wall clock → sim clock:** the viewer plays the whole race time-compressed;
+  `wallMs ≈ simMs / 5` (check: the pre-start countdown at wall 0 equals
+  `gunElapsedMs / 5`). The mapping carries an offset of about 0.25 s, so never
+  trust a wall time alone — read the boat positions back from the renderer and
+  match them to the sample you want.
+- **Renderer handle:** from the `<canvas>` fiber, walk up ~6 ancestors scanning
+  hook state for an object `{app, world, hud}`. `world` is the camera container
+  (`world.position`, `world.scale`); `world.toGlobal({x, y})` converts a point
+  in the viewer's local frame to canvas CSS pixels. The local frame is the
+  replay frame with **y negated** (`local = (x, -y)`).
+- **Boats:** one group under `world` has one child container per boat, ordered
+  by slot; `container.x, .y` is the sample position (y negated), and
+  `container.rotation` is the heading in radians. The viewer interpolates
+  between samples, so a seeked frame is sub-second accurate.
+- **Hull geometry** (Section 3) is read from the hull `Graphics` child:
+  `getLocalBounds()` gives `x ∈ [-5, 5], y ∈ [-14, +10]`; negative local y is
+  the bow.
+- **Overlay:** append an absolutely-positioned `<svg>` over the canvas
+  (`viewBox = canvas client size`) and draw lines whose endpoints come from
+  `world.toGlobal(...)`. The screenshot then shows the game's own rendering
+  with an exact geometric overlay. Remove the overlay when done.
+- **Zone-entry instant:** bisection on `onSeek` until the bow tip
+  (`position + 14 u · heading`) is exactly `zoneRadiusM` from the mark, reading
+  positions from the containers. This is how Figure 1 of the race-`4ec6514d`
+  ruling was made.
+
+### 1.4 Improvement opportunities (fetch)
 - **Bulk export.** This per-debrief scrape is one race at a time. For a training
   / audit corpus, ask the game's author for a direct export of replay blobs (the
   table or bucket they are rendered from). That also removes the fiber-walk,
@@ -199,7 +260,7 @@ Top-level keys and meaning:
   `sail` and `flags`. `flags` likely encodes right-of-way/penalty/protest state —
   request it from the author; it would be a strong cross-check.
 
-**`events`**: `[{ kind, boatSlot, tMs, rule?, counterpartySlot?, markId? }]`
+**`events`**: `[{ kind, boatSlot, tMs, rule?, counterpartySlot?, markId?, reason? }]`
 - `kind`: `OCS` (rule 22), `MARK_TOUCH` (rule 31, has `markId`), `INFRACTION`
   (Part 2, has `rule` and often `counterpartySlot`), `EXONERATION` (penalty
   taken / cleared), `DSQ` (disqualified, carries the `rule`).
@@ -209,25 +270,50 @@ Top-level keys and meaning:
   and ask the author to always include it.
 - A boat that breaks a rule and does **not** produce a matching `EXONERATION`
   typically ends with a `DSQ` on that rule (it never took its penalty).
+- Some `INFRACTION`s carry a free-text `reason` (seen: `"Not enough time and
+  space"` on a rule-16 call, `"No rights while tacking"` on rule 13).
+- **Reversals.** An `EXONERATION` with no penalty turn in the track, at the same
+  `tMs` as a new `INFRACTION` against the original counterparty, is the engine
+  reversing its call (seen at `t = 2801.5` in race `4ec6514d`). Treat the pair
+  as one incident, not two.
+- **The engine's rule labels are not reliable.** The same race tagged the
+  keep-clear boat with rule 16, which binds only a right-of-way boat. Audit the
+  facts against the rules yourself; use the engine's `rule` as a hint only.
 
 ---
 
 ## 3. Conventions (verified from data — do not re-guess)
 
-- **Coordinates:** metres. `+y` is upwind (toward the windward mark). `hdg` and
-  `w` are **compass degrees: 0 = +y (north), 90 = +x (east), clockwise.** A
-  heading's unit vector is `(sin h, cos h)`.
+- **Coordinates are game units, not metres.** The schema labels `x, y` and
+  `zoneRadiusM` as metres, but the hull the game draws is 24 of those units long
+  and its speeds (14 kt downwind) do not fit any real class at that scale. Treat
+  the unit as **u**, express every distance in a ruling in u **and hull lengths
+  (BL = 24 u)**, and give a real-world figure only as an illustration with the
+  class stated (a Laser is 4.23 m, so 1 u ≈ 0.18 m). Overlap, zone and line
+  geometry are scale-free, so verdicts do not depend on the scale. `+y` is
+  upwind (toward the windward mark). `hdg` and `w` are **compass degrees:
+  0 = +y (north), 90 = +x (east), clockwise.** A heading's unit vector is
+  `(sin h, cos h)`.
 - **`w` is the direction the wind blows FROM.** Verified: in a frame with
   `w ≈ 345`, the close-hauled fleet split into heading clusters ≈ 300° and ≈ 30°
   — exactly ±45° around the wind axis. So tack and windward/leeward are derivable
   from `hdg` and `w` alone.
-- **`(x,y)` is the hull CENTROID.** Line/mark tests must use the **bow**, modelled
-  as `centroid + (L/2)·heading_unit`. Verified: at a start gun, the bow model
-  reproduced *every* OCS call that a centroid-only test got wrong (both the boats
-  the engine flagged and the clean ones).
-- **Hull length `L`** is **not** in the data. Infer `L ≈ zoneRadiusM / 3 ≈ 33.6 m`
-  (RRS zone = 3 hull lengths) and **flag it for confirmation.** Beam is also
-  absent; assume ≈ `L/4 ≈ 8.4 m` only when you must, and label it.
+- **`(x,y)` is the boat's position point, and it is NOT the hull centroid.**
+  Measured from the replay viewer's hull sprite (Section 1.3): the hull spans
+  `[-5, +5]` u across and `[-14, +10]` u along the heading, bow at `-14` in the
+  sprite's frame. So the **bow is 14 u ahead** of the position point, the
+  **stern 10 u behind**, hull length **24 u**, beam **10 u** (25 × 11 u with the
+  outline). Line/mark/zone tests use `bow = pos + 14·heading_unit`; the
+  overlap test uses `stern = pos − 10·heading_unit`. (The earlier OCS
+  cross-check used a symmetric `L/2 = 16.8` bow offset and still reproduced
+  every gun-line call; re-run it with 14 u — backlog item 0.)
+- **Do not infer hull length from the zone.** The game's zone radius is
+  `100.8 u = 4.2 BL`, not the RRS 3 BL, so `zoneRadiusM / 3` gives a hull 40 %
+  too long. That inference (33.6 u) produced a wrong overlap ruling before it
+  was caught (Case D, Section 10). `DEFAULT_BOAT_LENGTH_M = 33.6` in
+  `rrs_geometry.py` is stale until backlog item 0 lands; pass the measured
+  values explicitly. Whether the **rules engine** uses the same offsets as the
+  renderer is unconfirmed (Section 8); the renderer is the best evidence.
 - **`tMs` clock:** events map to samples by `idx = round(tMs / sampleIntervalSimMs)`;
   with 1000 ms spacing, `idx == tMs/1000`. Always verify by checking
   `samples[idx].tMs == event.tMs` and fall back to nearest-by-scan.
@@ -250,6 +336,13 @@ Top-level keys and meaning:
    - **At a mark:** compute each boat's distance to that mark over time; the
      rounding window is where the subject boat is within the zone. Beware the
      metric pitfall in Section 5.1.
+   - **The zone-entry instant is sub-sample.** "A boat is in the zone when any
+     part of her hull is in the zone", so the instant is when the **bow tip**
+     (`pos + 14 u`) is exactly `zoneRadiusM` from the mark. Interpolate linearly
+     between the two bracketing samples, or bisect in the viewer (Section 1.3).
+     Never use "the first sample inside the zone" — at 14 u/s that is up to a
+     full hull length late, and the overlap test at that moment is what rule
+     18.2(a) turns on.
 4. Map the event `tMs` to its sample index and extract the frame
    `{slot: boat}` for that index (and a window around it for sequence rules).
 
@@ -271,7 +364,11 @@ the current mark.
 - `windward_boat(posA, posB, w)`: A is windward iff `(posA - posB) · windFrom > 0`.
 - `clear_astern` / `overlapped`: project `(posA - posB)` onto a heading axis;
   A is clear astern of B if that projection `< -L`. Overlap = neither clear astern.
-  (Uses the assumed `L`; mark that in the output.)
+  This is the symmetric-hull approximation in the code. **For a ruling use the
+  measured, asymmetric hull:** `margin = (bowB − sternA) · headingA` with
+  `bowB = posB + 14·uB` and `sternA = posA − 10·uA`; `margin < 0` ⇒ B is clear
+  astern of A. Report the margin in u and BL and show its sensitivity to the
+  hull model (Case D).
 - `on_course_side(bow, lineA, lineB, towardMark)`: sign test vs the first mark,
   using the **bow** point.
 
@@ -297,7 +394,13 @@ numbers — times, distances, speeds, tack, overlap Yes/No (Appendix M); (b) the
 rule(s) applied; (c) the on-point World Sailing Case number(s) and what they say
 (Section 0.1); (d) the conclusion; (e) the assumptions and resolution limits
 that qualify it. If the facts are not sufficient to decide, say so and name the
-data that would settle it — do not force a verdict.
+data that would settle it — do not force a verdict. Distances are given in u and
+BL (Section 3). Any finding that turns on hull geometry carries a sensitivity
+table (measured hull / symmetric hull / alternative) showing where it would
+flip. An overlap margin under ~0.1 BL cites rule 18.2(e) (reasonable doubt →
+presumed not obtained in time). Every diagram is a live capture from the replay
+viewer (Section 6). The finished ruling is a PDF filed in `past_rulings/` as
+`YYYY-MM-DD_race-<id8>_<incident>_<boats>.pdf`.
 
 **This checks the right-of-way _assignment_, which is fully determined by
 geometry. It does NOT by itself confirm an infringement _occurred_** (that needs
@@ -317,10 +420,11 @@ sample. Consume a window (±~10 s of samples) and compute:
   from legitimate overtaking).
 
 ### 5.5 Proximity, contact, and timing
-- **Centroid distance misleads for elongated hulls.** Model each boat as a
-  **segment** of length `L` centred on the centroid along its heading, and use
+- **Position-point distance misleads for elongated hulls.** Model each boat as
+  a **segment** from `pos − 10·u` (stern) to `pos + 14·u` (bow) and use
   **segment-to-segment distance** as the hull-to-hull gap. Contact ≈ gap <
-  combined half-beams (needs beam — flag the assumption).
+  combined half-beams (beam 10 u as drawn; the engine's collision model is
+  unknown, so label contact as modelled, never as found).
 - **"Foul recorded before contact" is normal, not an error.** Under Rule 11 (and
   the keep-clear definition) a boat breaks the rule the moment the ROW boat can
   no longer sail her course without avoiding action — always *before* any touch.
@@ -335,30 +439,40 @@ sample. Consume a window (±~10 s of samples) and compute:
 
 ---
 
-## 6. Visualization spec (incident diagram)
+## 6. Diagrams: live captures from the replay viewer, never generated images
 
-A frame diagram makes close calls legible. Reproduce the standard tactical view:
+**Rule: every diagram in a ruling is a screenshot of the game's own replay
+viewer at the relevant instant, with any construction lines overlaid in the
+viewer's coordinates.** Do not draw your own hull polygons or synthetic
+tactical views for the record. A generated picture carries your assumptions
+(hull size, offsets, scale) into the evidence and cannot be checked by the
+sailor against what they saw; the first ruling in Case D was presented with a
+synthetic diagram built on a wrong hull length and the sailor rejected it
+immediately. Generated renderings may be used privately as scratch analysis
+only.
 
-- **Wind from the top.** Rotate all positions and hull polygons into a
-  wind-aligned frame so the wind-FROM direction points straight up. For wind
-  direction `W` (deg), with `f = (sin W, cos W)` (up) and `r = (cos W, -sin W)`
-  (right): map each world point `(x,y) → (u,v) = ( (x,y)·r , (x,y)·f )` and plot
-  `(u,v)`. This is a proper rotation (det = 1), so port/starboard are preserved.
-  Do **not** `invert_xaxis` (that mirrors the scene and flips port/starboard).
-- **Boats as oriented hull polygons** (pointed bow), length `L`, beam ≈ `L/4`,
-  coloured by role (subject vs other), with a short heading arrow each.
-- **Panel: hull-to-hull gap vs time**, with vertical markers for the recorded
-  foul time and the nearest-approach time, and a shaded band at the combined
-  half-beam (the contact threshold).
-- **Panel: heading vs time** for both boats, with the luff-onset of each marked.
-  **Improvement:** also draw the **foul-time** vertical line on this panel (it is
-  currently only on the gap panel) so turn-order and foul-time are read together.
-- Label everything with sim time `t = idx` seconds and the hull gap per frame.
+Procedure (details in Section 1.3):
+1. Open `/race/<id>/replay`, pause, and **follow the subject boat**.
+2. **Seek to the instant** that the rule turns on (zone entry, luff onset,
+   contact) by bisection on the renderer's positions, not by eye.
+3. **Zoom** until both hulls and the relevant mark/zone circle are legible
+   (two or three clicks). The zone circles are drawn by the game.
+4. **Overlay the construction** as an SVG over the canvas, computed from the
+   boat containers and `world.toGlobal`: for overlap, the line through the
+   subject's stern (`pos − 10·u`) perpendicular to her heading, the other
+   boat's bow point (`pos + 14·u`), and the margin tick between them; for
+   zone entry, the bow-tip point on the circle. Label the overlay with the
+   numbers in u.
+5. **Capture** two frames: one zoomed on the hulls and one wide enough to show
+   the marks and zones. Save them with the ruling and cite the viewer URL and
+   the seek time.
+6. State in the caption that the image is the game's rendering and what was
+   overlaid.
 
-A reference implementation (matplotlib) produced the frames for the worked
-Case C below; reuse and parameterise it per incident.
-
----
+Wind-rotation, hull-gap-vs-time and heading-vs-time plots remain useful for the
+reviewer's own analysis of sequence rules (Section 5.4); if one is included in a
+ruling it is labelled "derived plot, not a replay image" and never stands in for
+the viewer capture.
 
 ## 7. Verifying the committee itself
 
@@ -382,7 +496,10 @@ Case C below; reuse and parameterise it per incident.
 
 | limitation | effect | ask the author for |
 |---|---|---|
-| No hull dimensions | overlap (11/12/18) and all contact rules (14/31) rely on assumed `L≈33.6 m`, beam `≈8.4 m` | exact hull length & beam, or confirm the inference |
+| Hull dimensions known only from the renderer | overlap (11/12/18) uses the drawn hull (24 u, bow +14, stern −10, beam 10 u); the engine's own hull model may differ | the engine's hull length/beam/offsets used for overlap, zone and contact |
+| Unit scale unknown | distances cannot be quoted in real metres; the "m" label in the schema is not a metre | the intended real length of one unit and the class modelled |
+| Engine rule labels unreliable | an `INFRACTION.rule` may name a rule that cannot bind that boat (rule 16 on a keep-clear boat) | the engine's rule-selection logic |
+| Reversal mechanism undocumented | an `EXONERATION` + simultaneous counterparty `INFRACTION` with no penalty turn | what triggers a re-adjudication (automatic, player protest, other) |
 | ~1 Hz sampling | can't resolve sub-second turn order; marginal OCS at the gun | native sim tick rate / finer replay |
 | `sail`, `flags` dropped | lose right-of-way/penalty/protest state the live feed has | include `flags`/`sail` in the replay |
 | `counterpartySlot` sometimes missing | some INFRACTIONs can't be placed | always populate counterparty |
@@ -394,6 +511,12 @@ Case C below; reuse and parameterise it per incident.
 
 ## 9. Improvement backlog
 
+0. **Correct the hull model in code** (`rrs_geometry.py`): replace
+   `DEFAULT_BOAT_LENGTH_M = 33.6` with the measured 24 u and asymmetric
+   offsets (bow +14, stern −10, beam 10), make `clear_astern`/`overlapped` use
+   bow-vs-stern points, express outputs in u and BL, and re-run the OCS
+   gun-line cross-check with the 14 u bow offset. Until then pass the measured
+   values explicitly.
 1. **Window-based assessors** for Rules 13/15/16/17/18 (consume a sample window;
    compute tack/overlap/course-change series). This is the biggest capability gap
    — most interesting incidents are sequence-dependent.
@@ -402,12 +525,17 @@ Case C below; reuse and parameterise it per incident.
    pitfall, 5.1) so rounding gaps are correct even with overstanding boats.
 4. **Rule 44 screen:** flag any `MARK_TOUCH`/Part-2 breach where the boat *gained*
    net places across the penalty window (a "did 44.1(b) deserve a look" filter).
-5. **Diagram:** add the foul-time line to the heading panel (Section 6).
+5. **Viewer overlay helper:** a reusable snippet that seeks, overlays the
+   abeam/zone construction and captures the two frames (Section 6), so each
+   ruling does not re-derive it.
 6. **Batch audit** across many races to surface systematic engine disagreements;
-   depends on bulk export (1.3).
+   depends on bulk export (1.4).
 7. **Resolution-aware verdicts:** when a call depends on timing finer than the
    sample interval, emit "indeterminate at replay resolution" rather than a
    verdict.
+8. **Rulings archive:** every finished ruling goes in `past_rulings/` (PDF,
+   named `YYYY-MM-DD_race-<id8>_<incident>_<boats>.pdf`); index them so the
+   same incident type can be compared across races.
 
 ---
 
@@ -418,10 +546,13 @@ slot, not by player identity.
 
 **Case A — Start-line OCS, bow model.** At the gun, the subject boat's centroid
 read *behind* the line yet the engine flagged OCS. Modelling the line test at the
-bow (`centroid + L/2` along heading) reproduced the engine's call for that boat
-and for every other boat at the gun (flagged and clean). *Lesson:* `(x,y)` is the
-centroid; judge lines/marks at the bow; this simultaneously corroborated the
-`L≈33.6 m` inference.
+bow (then modelled as `pos + L/2` with `L = 33.6 u`) reproduced the engine's call
+for that boat and for every other boat at the gun (flagged and clean). *Lesson:*
+`(x,y)` is not the bow; judge lines/marks at the bow. *Correction (Case D):* this
+did **not** corroborate a 33.6 u hull — the gun-line calls were consistent with
+any bow offset in a range, and the hull measured from the viewer is 24 u with the
+bow 14 u ahead of the position point. Re-run this check with 14 u (backlog
+item 0).
 
 **Case B — Windward-mark touch and Rule 44.1(b).** The subject touched the mark
 (Rule 31) and took a One-Turn penalty. Question: did the touch yield a
@@ -445,3 +576,27 @@ caveat that the one surviving Rule-16 argument (did the leeward boat's later luf
 remove the last of the windward boat's room?) depends on sub-1 s timing the 1 Hz
 replay cannot resolve. *Lessons:* 5.4 (sequence window), 5.5 (hull gap, foul-vs-
 contact timing, resolution limit), Section 6 (diagram).
+
+**Case D — Leeward gate, overlap at zone entry (race `4ec6514d`, ruling filed
+in `past_rulings/`).** Two boats on port tack approached the port gate mark,
+the other boat ~1.5 BL to windward and slightly astern. Question: was she
+overlapped when the first boat reached the zone (rule 18.2(a))? The engine had
+charged the subject (leeward) boat under rule 16, then reversed and charged the
+windward boat under rule 16. *First pass (wrong):* using the inferred 33.6 u
+hull the windward boat's bow was 7.7 u ahead of the line abeam the subject's
+stern → "overlapped". The sailor rejected a synthetic diagram of this on sight.
+*Second pass:* the hull was measured from the viewer (24 u, bow +14 / stern
+−10), the zone-entry instant was found by bisection in the viewer (bow tip on
+the circle, t ≈ 2718.8), and the construction was overlaid on the game's
+rendering: the windward boat's bow was **1.9 u = 0.08 BL astern** of the line →
+clear astern; the overlap began ~2 s later when the subject bore away. The
+sailor, who knows the class, put it at "about a foot" — 0.08 BL on a 4.23 m
+hull is 0.33 m. Verdict: rule 18.2(a)(2) made the windward boat the mark-room
+giver, 18.2(e) covered the fine margin, the subject was ROW under rule 11 and
+exonerated under 43.1(b); Cases 2, 12, 118 on point. The engine's reversal was
+right in outcome but rule 16 cannot bind a keep-clear boat. *Lessons:* units
+and hull geometry are measured from the renderer, never inferred (Section 3);
+zone entry is a sub-sample instant (Section 4); diagrams are viewer captures
+with overlays (Section 6); any geometry-dependent finding carries a sensitivity
+table (Section 5.3); the first ruling must not go out before the decisive
+assumption is measured.
