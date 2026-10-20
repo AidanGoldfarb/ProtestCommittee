@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local replay data and generated outputs (not for the repo)
+replay_*.json
+*.png
+
+# World Sailing copyrighted material — NOT redistributed in this repo.
+# Build locally with references/build_casebook.py (see references/README.md).
+references/WS-Case-Book-*.pdf
+references/casebook.txt
+references/casebook_parsed.json
+references/CASEBOOK_REFERENCE.md
