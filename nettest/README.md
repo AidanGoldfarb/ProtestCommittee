@@ -19,44 +19,69 @@ press **export**, which saves a `.json` file you can send (or not).
 
 It never stores packet contents, chat, names, or anything you type. You can read all of
 it: the whole script is [`regattatron-capture.user.js`](regattatron-capture.user.js),
-about 170 lines.
+about 200 lines.
 
-## Install (once)
+## Install (once, about two minutes)
 
-1. Install the Tampermonkey extension for your browser
-   (Chrome / Edge / Brave: Chrome Web Store; Firefox: addons.mozilla.org; Safari: App Store).
-   In Chrome you also need to turn on **Developer mode** on `chrome://extensions` for
-   userscripts to run; Tampermonkey shows a notice if it is off.
-2. Open this link in that browser and click **Install** in the Tampermonkey page that
-   appears:
+**1. Install Tampermonkey**, the userscript manager, for your browser:
 
-   `https://raw.githubusercontent.com/AidanGoldfarb/ProtestCommittee/main/nettest/regattatron-capture.user.js`
+* Chrome, Edge, Brave, Opera: Tampermonkey in the Chrome Web Store
+* Firefox: Tampermonkey on addons.mozilla.org
+* Safari: Tampermonkey in the Mac App Store
 
-   If the link does not open an install page, open Tampermonkey's dashboard, choose
-   **Utilities → Import from file** (or **+** to create a new script), and paste the
-   contents of the file.
-3. Open regattatron.com. A small dark badge appears at the bottom-left:
+**2. Chrome-based browsers only: allow user scripts.** Tampermonkey cannot run scripts
+until you switch this on, and it is off by default:
 
-   `capture ● 1234 fr · 0 holds · 0 drops · 1 sock  [export] [reset] [×]`
+* click the Tampermonkey icon in the toolbar (puzzle-piece menu if it is hidden)
+* choose **Manage extension**
+* turn on **Allow User Scripts** (on older Chrome versions the switch is called
+  **Developer mode**, at the top right of the `chrome://extensions` page)
 
-   `●` means a race socket is open and being recorded. `fr` is packets recorded,
-   `holds` is the number of gaps longer than 300 ms between state packets, `drops` is
-   abnormal socket closes. `×` hides the badge until the next page load; recording continues.
+If you skip this, the install in step 3 appears to succeed but nothing runs and no
+badge appears.
+
+**3. Install the script.** Open this link in the same browser and press **Install**
+on the Tampermonkey page that opens:
+
+`https://raw.githubusercontent.com/AidanGoldfarb/ProtestCommittee/main/nettest/regattatron-capture.user.js`
+
+If the link only shows the script text instead of an install page, open the
+Tampermonkey dashboard (icon → Dashboard), press the **+** tab, delete the template,
+paste the whole script text, and save with Ctrl+S / Cmd+S.
+
+**4. Check it is running.** Open or reload regattatron.com. A small dark badge appears
+at the bottom-left of the page:
+
+`capture ○ 0 fr · 0 holds · 0 drops · 0 sock  [export] [reset] [×]`
+
+* `○` becomes `●` once a race socket is open, and `fr` (packets recorded) then climbs
+  by about 10 per second during a race.
+* `holds` is the number of gaps longer than 300 ms between state packets, `drops` is
+  the number of abnormal socket closes.
+* `×` hides the badge until the next page load; recording continues.
+
+No badge means the script is not running: check step 2, then check that the script is
+enabled in the Tampermonkey dashboard.
+
+Updates are automatic: Tampermonkey checks the link above and installs new versions
+itself.
 
 ## Use
 
-1. Race (or spectate) as normal. Do nothing else. The script survives the game's own
-   page reloads, so a disconnect and reconnect is recorded too.
-2. After the regatta, press **export** on the badge. A file named
-   `regattatron-capture-<date>.json` lands in your downloads. A full regatta is roughly
-   1–3 MB.
-3. Send that file to whoever is collecting them, with one line of context: which
-   machine (OS), wired or Wi-Fi, roughly where you are, and whether you were racing or
-   watching.
-4. Press **reset** when you want to start clean (for example before the next regatta
-   you want to report). Reset asks for confirmation and deletes the recorded data.
+1. **Just before the regatta you want to report, press reset** on the badge (it asks
+   to confirm). That way the file contains only that regatta.
+2. **Race (or spectate) as normal from one browser tab.** Do not have the game open in
+   a second tab or on a second machine on the same account during the capture; part of
+   what we are testing is whether a second session causes the stalls. The script
+   survives the game's own page reloads, so disconnects and reconnects are recorded.
+3. **After the regatta, press export.** A file named `regattatron-capture-<date>.json`
+   lands in your downloads folder. A full regatta is roughly 1–2 MB.
+4. **Send that file** to whoever is collecting them, with one line of context: which
+   machine (Windows / Mac / Linux), wired or Wi-Fi, roughly where you are, and whether
+   you were racing or watching.
 
-The badge is only in your browser; other players cannot see it.
+The badge is only in your browser; other players cannot see it. The script records
+timing only; see "What it records" above.
 
 ### Without Tampermonkey
 
