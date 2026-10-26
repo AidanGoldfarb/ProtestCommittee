@@ -1,6 +1,6 @@
 # Regattatron noon regatta, 2026-10-26: the 15 s hold is a per-750-tick job on the race object
 
-Capture: `aidan-windows.json` (the **Windows machine**, wired Ethernet, Chrome, userscript v2.0.1, single tab, nothing else on the
+Captures: `aidan-windows.json` (the **Windows machine**, wired Ethernet, Chrome, userscript v2.0.1, single tab, nothing else on the
 account). Reset pressed 11:57:23, export 12:19:21. Three races, no page reloads, no
 watchdog disconnects. Analysis: `python3 nettest/analyze.py nettest/runs/2026-10-26-noon/aidan-windows.json`.
 
@@ -78,6 +78,36 @@ then persist it (I/O, usually fast enough to hide, sometimes 1–2 s for the res
 4. Separately (seen 2026-10-26 morning, `runs/2026-10-26-test`): a socket closed with 1006
    while packets were flowing, the client reconnected in about 1 s, and the page then
    reloaded anyway. Cancel the reload once the replacement socket opens.
+
+## Second client, same regatta: every hold is shared, to the millisecond
+
+A second racer exported their Chrome DevTools network log for the same regatta (three HAR
+files, which turned out to be one DevTools session saved three times; converted with
+`har2capture.py` into `other-racer.json`, timing only, bodies dropped). Their clock runs
+about 4.7 s ahead of the Windows machine's, so alignment is by server tick.
+
+| race | holds, Windows | holds, other racer | shared at the same tick | only one client |
+|---|---|---|---|---|
+| 1 `7394d4bd` | 2 | 2 | 2 | 0 |
+| 2 `fde93f11` | 16 | 15 | 15 | 1 (a 301 ms gap, off-grid, Windows only) |
+| 3 `2b7e0056` | 6 | 7 | 6 | 1 (a 311 ms gap, off-grid, other racer only) |
+
+Race 2, the long-form holds, duration in ms per cycle on each client:
+
+```
+tick      7500  8250  9000  9750 10500 11250 12000 12750 13500 14250 15000 15750 16500 17250 18000
+Windows   1211  1031   542  2072  1899   727   888   893   950  1110  1128  1160   907   924  1101
+other     1216  1031   540  2072  1898   727   888   887   854  1110  1123  1159   908   810  1031
+```
+
+Two clients on different machines, networks and clocks saw the same hold start at the same
+server tick and end within a few milliseconds of each other, fifteen times in a row. The
+hold is produced before the packets leave the race object. Nothing downstream (Cloudflare
+edge, ISP, Wi-Fi, machine, browser) can make two independent paths agree like this.
+
+The tick-boundary statistics match on both clients in all three races too (boundary-frame
+delay 143 vs 147 ms in race 1, 228 vs 224 ms in race 3; hold after boundary 672 vs 661 ms
+in race 2).
 
 ## Not seen today
 

@@ -91,6 +91,21 @@ contents of [`capture.js`](capture.js) and press Enter (Chrome may ask you to ty
 version does not survive a page reload, so after any disconnect it has to be pasted
 again. `__rtExport()` in the console downloads the file.
 
+### Alternative: a Chrome DevTools network log
+
+If someone would rather not install anything, Chrome's own network log works too, at the
+cost of a much larger file that **contains every message body, including chat**. Before the
+race: open DevTools (F12), Network tab, tick **Preserve log**, and leave DevTools open.
+After the regatta: right-click in the request list, **Save all as HAR with content**. The
+analyst converts it with:
+
+```
+python3 nettest/har2capture.py race.har -o capture.json --label "who/where"
+```
+
+Several HARs from one session can be given at once; duplicates are merged. The converted
+file keeps timing only, so it is safe to commit; the raw HAR is not.
+
 ## For the person analysing the files
 
 ```
