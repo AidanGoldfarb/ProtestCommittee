@@ -1,9 +1,8 @@
 # Regattatron noon regatta, 2026-10-26: the 15 s hold is a per-750-tick job on the race object
 
-Capture: `aidan-mac.json` (name kept for the collector; the file is from the **Windows
-machine**, wired Ethernet, Chrome, userscript v2.0.1, single tab, nothing else on the
+Capture: `aidan-windows.json` (the **Windows machine**, wired Ethernet, Chrome, userscript v2.0.1, single tab, nothing else on the
 account). Reset pressed 11:57:23, export 12:19:21. Three races, no page reloads, no
-watchdog disconnects. Analysis: `python3 nettest/analyze.py nettest/runs/2026-10-26-noon/aidan-mac.json`.
+watchdog disconnects. Analysis: `python3 nettest/analyze.py nettest/runs/2026-10-26-noon/aidan-windows.json`.
 
 ## Summary
 
