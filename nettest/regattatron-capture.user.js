@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Regattatron connection capture
 // @namespace    https://github.com/AidanGoldfarb/ProtestCommittee
-// @version      2.0.0
+// @version      2.0.1
 // @description  Passively records when each game-state packet arrives (timing only, never message contents) so lag and disconnects can be analysed. Nothing is sent anywhere; export the file yourself with the badge button.
 // @author       Aidan Goldfarb
 // @match        https://regattatron.com/*
@@ -18,7 +18,8 @@
 //     WIND_UPDATE / PONG / other), server tick number, byte length
 //   * for every message the game sends: time, byte length, whether it was a PING
 //   * socket open / close / error, close codes, page loads and reloads, tab visibility
-//   * the "N spectators" / "online N" numbers shown on the page, every 10 s
+//   * every 10 s: the number of boats in the last state packet and the "N spectators" /
+//     "online N" numbers shown on the page
 //   * your browser's user-agent string and the race URLs you opened
 // It never stores message bodies, chat, names or anything typed. Data stays in this
 // browser's localStorage until you press Export (downloads a .json) or Reset.
@@ -26,7 +27,7 @@
 (function () {
   'use strict';
   const KEY = 'rt_capture_v2';
-  const VERSION = '2.0.0';
+  const VERSION = '2.0.1';
   const MAX_FRAMES = 250000;              // ~7 hours at 10 Hz; oldest sockets are dropped beyond this
   const HOLD_MS = 300;                    // gap between state frames that counts as a "hold" on the badge
   const kindCode = { STATE_DELTA: 1, WELCOME: 2, WIND_UPDATE: 3, PONG: 4, PING: 4 };
@@ -67,7 +68,8 @@
       created: Date.now(), opened: null, closed: null, error: null,
       // frames: [arrivalEpochMs, tick|-1, bytes, kindCode]   kindCode 1=STATE_DELTA 2=WELCOME 3=WIND_UPDATE 4=PONG 9=other
       // sent:   [epochMs, bytes, kindCode]                    kindCode 4=PING 9=other
-      frames: [], sent: [], spectators: [], kinds: {}
+      // spectators: [epochMs, spectatorsShown|-1, onlineShown|-1, pathTail, boatsInLastState|-1]
+      frames: [], sent: [], spectators: [], kinds: {}, lastBoats: -1
     };
     st.sockets.push(rec);
     st.events.push({ at: Date.now(), ev: 'ws_create', id: rec.id });
@@ -82,7 +84,11 @@
         const k = km ? km[1] : 'OTHER';
         rec.kinds[k] = (rec.kinds[k] || 0) + 1;
         kind = kindCode[k] || 9;
-        if (kind === 1) { const tm = /"tick":(\d+)/.exec(d.slice(0, 160)); if (tm) tick = +tm[1]; }
+        if (kind === 1) {
+          const tm = /"tick":(\d+)/.exec(d.slice(0, 160)); if (tm) tick = +tm[1];
+          let n = 0, p = -1; while ((p = d.indexOf('"ocs":', p + 1)) !== -1) n++;
+          if (n) rec.lastBoats = n;
+        }
       }
       rec.frames.push([now, tick, bytes, kind]);
       dirty = true;
@@ -108,6 +114,7 @@
     return s;
   }
   Hooked.prototype = Orig.prototype;
+  // lastBoats counts the per-boat '"ocs":' key in the latest STATE_DELTA (one per boat)
   Hooked.CONNECTING = 0; Hooked.OPEN = 1; Hooked.CLOSING = 2; Hooked.CLOSED = 3;
   window.WebSocket = Hooked;
 
@@ -184,7 +191,7 @@
     if (sock && sock.opened && !sock.closed && document.body) {
       const t = document.body.innerText || '';
       const sp = /(\d+)\s*spectat/i.exec(t); const on = /online\s*(\d+)/i.exec(t);
-      sock.spectators.push([Date.now(), sp ? +sp[1] : -1, on ? +on[1] : -1, location.pathname.slice(-40)]);
+      sock.spectators.push([Date.now(), sp ? +sp[1] : -1, on ? +on[1] : -1, location.pathname.slice(-40), sock.lastBoats]);
       dirty = true;
     }
     if (!badge && document.body) makeBadge();

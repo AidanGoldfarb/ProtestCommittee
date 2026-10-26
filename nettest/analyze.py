@@ -172,6 +172,9 @@ def analyse_file(path, args, pings):
         sp = [x for x in s["spectators"] if x[1] >= 0 or x[2] >= 0]
         if sp:
             print(f"    spectators {sp[0][1]} -> {sp[-1][1]}, online {sp[0][2]} -> {sp[-1][2]}")
+        boats = [x[4] for x in s["spectators"] if len(x) > 4 and x[4] >= 0]
+        if boats:
+            print(f"    boats in state packets: {min(boats)} -> {max(boats)}")
         if spike_times:
             near = 0
             for t0, g, *_ in st["holds"]:
