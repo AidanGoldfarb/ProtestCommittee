@@ -124,6 +124,10 @@ def report_disconnects(cap, sockets_by_id):
         if e["ev"] != "ws_close" or e.get("code") in NORMAL_CLOSE:
             continue
         s = sockets_by_id.get(e["id"])
+        if s is not None and e["at"] < s["created"]:
+            s = None
+            lines.append(f"  {fmt_t(e['at'])} socket {e['id']} code {e.get('code')}: socket from before the last reset (not recorded)")
+            continue
         last = max((f[0] for f in s["frames"]), default=None) if s else None
         silence = f"{(e['at'] - last) / 1000:.1f} s after last frame" if last else "no frames received"
         app = [x for x in evs if x["ev"] == "app_close_called" and x.get("id") == e["id"] and x["at"] <= e["at"]]
@@ -183,6 +187,17 @@ def analyse_file(path, args, pings):
                 if i < len(spike_times) and spike_times[i] <= a + g / 1000 + 0.05:
                     near += 1
             print(f"    holds coinciding with a local ping spike: {near}/{len(st['holds'])}")
+        # delay of the frame at each period boundary in server ticks (20 ms each), vs all other frames
+        bt = int(args.period * 50)
+        gb = [(st["state"][i - 1][1], st["gaps"][i - 1]) for i in range(1, len(st["state"]))]
+        before = [g for tk, g in gb if tk >= 0 and tk % bt == bt - 5]
+        after = [g for tk, g in gb if tk >= 0 and tk % bt == 0]
+        other = [g for tk, g in gb if tk >= 0 and tk % bt not in (0, bt - 5)]
+        if before and after and other:
+            print(f"    tick-boundary (every {bt} ticks = {args.period:.0f} s of sim): delay of boundary frame mean {statistics.mean(before):.0f} ms "
+                  f"(max {max(before):.0f}, >150 ms in {sum(g > 150 for g in before)}/{len(before)} cycles); "
+                  f"hold after it mean {statistics.mean(after):.0f} ms (max {max(after):.0f}, >150 ms in {sum(g > 150 for g in after)}/{len(after)}); "
+                  f"all other gaps mean {statistics.mean(other):.1f} ms, >150 ms in {sum(g > 150 for g in other)}/{len(other)}")
         pt = phase_test(st["t"], args.period)
         print(f"    verdict: {verdict(pt, st['holds'], st['dur_s'])}")
         if pt:

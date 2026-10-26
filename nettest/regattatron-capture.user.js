@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Regattatron connection capture
 // @namespace    https://github.com/AidanGoldfarb/ProtestCommittee
-// @version      2.0.1
+// @version      2.0.2
 // @description  Passively records when each game-state packet arrives (timing only, never message contents) so lag and disconnects can be analysed. Nothing is sent anywhere; export the file yourself with the badge button.
 // @author       Aidan Goldfarb
 // @match        https://regattatron.com/*
@@ -27,7 +27,7 @@
 (function () {
   'use strict';
   const KEY = 'rt_capture_v2';
-  const VERSION = '2.0.1';
+  const VERSION = '2.0.2';
   const MAX_FRAMES = 250000;              // ~7 hours at 10 Hz; oldest sockets are dropped beyond this
   const HOLD_MS = 300;                    // gap between state frames that counts as a "hold" on the badge
   const kindCode = { STATE_DELTA: 1, WELCOME: 2, WIND_UPDATE: 3, PONG: 4, PING: 4 };
@@ -37,6 +37,7 @@
     tz: Intl.DateTimeFormat().resolvedOptions().timeZone, pages: [], sockets: [], events: [] });
   let st = load() || fresh();
   let dirty = false;
+  let gen = 0;                            // bumped on reset so sockets from before it stop logging
   const save = () => {
     try { localStorage.setItem(KEY, JSON.stringify(st)); dirty = false; }
     catch (e) { st.events.push({ at: Date.now(), ev: 'save_failed', msg: String(e).slice(0, 80) }); }
@@ -71,10 +72,13 @@
       // spectators: [epochMs, spectatorsShown|-1, onlineShown|-1, pathTail, boatsInLastState|-1]
       frames: [], sent: [], spectators: [], kinds: {}, lastBoats: -1
     };
+    const myGen = gen;
+    const live = () => myGen === gen;
     st.sockets.push(rec);
     st.events.push({ at: Date.now(), ev: 'ws_create', id: rec.id });
-    s.addEventListener('open', () => { rec.opened = Date.now(); st.events.push({ at: rec.opened, ev: 'ws_open', id: rec.id }); dirty = true; });
+    s.addEventListener('open', () => { if (!live()) return; rec.opened = Date.now(); st.events.push({ at: rec.opened, ev: 'ws_open', id: rec.id }); dirty = true; });
     s.addEventListener('message', (e) => {
+      if (!live()) return;
       const now = Date.now();
       const d = e.data;
       const bytes = typeof d === 'string' ? d.length : (d.byteLength || d.size || 0);
@@ -94,13 +98,15 @@
       dirty = true;
     });
     s.addEventListener('close', (e) => {
+      if (!live()) return;
       rec.closed = { at: Date.now(), code: e.code, reason: e.reason, clean: e.wasClean, frames: rec.frames.length };
       st.events.push({ at: Date.now(), ev: 'ws_close', id: rec.id, code: e.code, reason: e.reason, clean: e.wasClean });
       save();
     });
-    s.addEventListener('error', () => { rec.error = Date.now(); st.events.push({ at: Date.now(), ev: 'ws_error', id: rec.id }); dirty = true; });
+    s.addEventListener('error', () => { if (!live()) return; rec.error = Date.now(); st.events.push({ at: Date.now(), ev: 'ws_error', id: rec.id }); dirty = true; });
     const origSend = s.send.bind(s);
     s.send = function (d) {
+      if (!live()) return origSend(d);
       let kind = 9;
       if (typeof d === 'string') { const km = /"kind":"([A-Z_]+)"/.exec(d.slice(0, 80)); if (km && kindCode[km[1]]) kind = kindCode[km[1]]; }
       rec.sent.push([Date.now(), typeof d === 'string' ? d.length : (d.byteLength || d.size || 0), kind]);
@@ -108,7 +114,7 @@
     };
     const origClose = s.close.bind(s);
     s.close = function (code, reason) {
-      st.events.push({ at: Date.now(), ev: 'app_close_called', id: rec.id, readyState: s.readyState, code: code });
+      if (live()) st.events.push({ at: Date.now(), ev: 'app_close_called', id: rec.id, readyState: s.readyState, code: code });
       return origClose(code, reason);
     };
     return s;
@@ -149,7 +155,7 @@
     document.body.appendChild(a); a.click(); a.remove();
     return 'exported ' + st.sockets.length + ' socket(s), ' + st.sockets.reduce((n, s) => n + s.frames.length, 0) + ' frames';
   };
-  window.__rtReset = function () { localStorage.removeItem(KEY); st = fresh(); st.events.push({ at: Date.now(), ev: 'reset' }); save(); render(); return 'reset'; };
+  window.__rtReset = function () { gen++; localStorage.removeItem(KEY); st = fresh(); st.events.push({ at: Date.now(), ev: 'reset' }); save(); render(); return 'reset'; };
   window.__rtState = () => st;
 
   // ---- badge ----------------------------------------------------------------

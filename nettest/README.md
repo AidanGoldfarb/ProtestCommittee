@@ -122,8 +122,14 @@ share one value across clients and across sockets are locked to the server's clo
 
 ## Known findings so far
 
-See [`runs/noon/REPORT.md`](runs/noon/REPORT.md) for the 2026-10-23 lunch-regatta
-capture: 10 Hz feed, periodic 0.4–3.1 s holds on an exact 15 s server-anchored grid
-in an 18-boat race with no packet loss, and the client's watchdog turning a 4 s stall
-into a full reload. Races earlier in the same regatta were flat. The open question,
-which the multi-client capture is designed to answer, is what triggers the hold.
+* [`runs/2026-10-26-noon/REPORT.md`](runs/2026-10-26-noon/REPORT.md): wired Windows
+  machine, single session, 7-boat race. Every race shows a job on the race object every
+  750 server ticks (15 s of sim time) that delays the boundary packet by 0.1–0.5 s. In
+  one race that job began holding the whole feed 0.5–2.1 s every cycle for the rest of
+  the race. Nothing lost, nothing local.
+* [`runs/noon/REPORT.md`](runs/noon/REPORT.md): 2026-10-23 lunch regatta from the Mac,
+  the first sighting of the 15 s hold (18 boats), plus the client's watchdog turning a
+  4 s stall into a full reload.
+* [`runs/2026-10-26-test/NOTES.md`](runs/2026-10-26-test/NOTES.md): sockets cut with
+  code 1006 while packets were flowing, reconnect succeeding within 1 s, page reloading
+  anyway.
