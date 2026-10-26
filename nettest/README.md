@@ -142,6 +142,9 @@ share one value across clients and across sockets are locked to the server's clo
   750 server ticks (15 s of sim time) that delays the boundary packet by 0.1–0.5 s. In
   one race that job began holding the whole feed 0.5–2.1 s every cycle for the rest of
   the race. Nothing lost, nothing local.
+* [`runs/2026-10-26-1430/NOTES.md`](runs/2026-10-26-1430/NOTES.md): same machine, 2:30 PM
+  regatta, 10–12 boats: the 750-tick job present but tiny (15–20 ms), and four abrupt 1006
+  socket cuts with a working reconnect followed by a page reload each time.
 * [`runs/noon/REPORT.md`](runs/noon/REPORT.md): 2026-10-23 lunch regatta from the Mac,
   the first sighting of the 15 s hold (18 boats), plus the client's watchdog turning a
   4 s stall into a full reload.
