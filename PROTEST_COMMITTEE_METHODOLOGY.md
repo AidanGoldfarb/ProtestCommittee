@@ -600,3 +600,29 @@ zone entry is a sub-sample instant (Section 4); diagrams are viewer captures
 with overlays (Section 6); any geometry-dependent finding carries a sensitivity
 table (Section 5.3); the first ruling must not go out before the decisive
 assumption is measured.
+
+**Case E — Windward mark, both boats tack in the zone (race `d6509c47`, ruling
+filed in `past_rulings/`).** Two boats entered the zone overlapped on starboard
+below the layline, both tacked onto port inside the zone, then the leading boat
+tacked back onto starboard 36 u from the mark directly ahead of the other, who
+was clear astern (margin −1.9 u) and closing at twice her speed. The trailing
+boat had to luff 20° in one second and pass head to wind with the hulls 2.6 u
+(0.11 BL) apart. Under RRS 2025–2028 neither boat held mark-room at that moment:
+18.2(a) had been switched off by 18.2(b) when the leader first passed head to
+wind, 18.1(a)(1) applied while they were on opposite tacks, and the new 18.3
+removes 18.2 between two boats that both tack in the zone. The incident is
+decided by rules 13 and 15 (Case 27 is on all fours): the tacking boat broke
+both; the trailing boat kept clear by the only means available and is exonerated
+under 43.1(a). *Engine audit:* the engine's first call (rule 15 on the tacking
+boat, "Not enough time and space") was right. 28.5 s later it reversed itself —
+EXONERATION of the tacking boat plus a rule-15 INFRACTION against the other boat
+with **no counterparty** — at an instant when no boat was within 32 u and nobody
+altered course. The same shape (rule-15 call, then 18–28 s later an exoneration
+and a counterparty-less rule-15 charge on the original counterparty) appears
+twice in one race, so it is a systematic engine behaviour, not a judgement; the
+victim then sailed an unnecessary One-Turn and picked up a consequential rule-11
+call during it. *Lessons:* a counterparty-less INFRACTION at a time with no boat
+nearby is a flag for an engine reversal — audit the original incident, not the
+reversal instant (Section 2 "Reversals"); under 2025 rule 18.3 do not reach for
+mark-room when both boats tacked in the zone; the rule-13/15 window is where the
+facts live (Section 5.4).

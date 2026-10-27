@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Protest Committee ruling — race d6509c47, windward mark, AidanGoldfarb v Yahooz</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  body { font: 11pt/1.45 -apple-system, "Helvetica Neue", Arial, sans-serif; color: #111; max-width: 180mm; margin: 0 auto; }
+  h1 { font-size: 17pt; margin: 0 0 4pt; }
+  h2 { font-size: 13pt; margin: 18pt 0 6pt; border-bottom: 1px solid #999; padding-bottom: 2pt; }
+  h3 { font-size: 11.5pt; margin: 12pt 0 4pt; }
+  .meta { color: #444; font-size: 10pt; margin-bottom: 10pt; }
+  table { border-collapse: collapse; font-size: 9.5pt; margin: 6pt 0 10pt; width: 100%; }
+  th, td { border: 1px solid #bbb; padding: 3pt 5pt; text-align: left; vertical-align: top; }
+  th { background: #eee; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  figure { margin: 10pt 0 14pt; page-break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid #999; }
+  figcaption { font-size: 9.5pt; color: #333; margin-top: 4pt; }
+  .verdict { border: 2px solid #222; padding: 8pt 10pt; margin: 10pt 0; background: #f7f7f7; }
+  .small { font-size: 9.5pt; color: #333; }
+  code { font-family: Menlo, monospace; font-size: 9.5pt; }
+  ul { margin: 4pt 0 8pt 18pt; } li { margin: 2pt 0; }
+</style>
+</head>
+<body>
+
+<h1>Protest Committee ruling — windward mark, AidanGoldfarb v Yahooz</h1>
+<div class="meta">
+Regattatron race <code>d6509c47-8969-4fce-8ae6-83a2eb2aa5ec</code> (16 boats, windward mark <code>WW</code> at (0, 960) u, to be left to port, zone 100.8 u = 4.2 BL).
+Replay sampled at 1 Hz; sim clock in seconds. Racing Rules of Sailing 2025–2028. Reviewed 2026-10-27 by the ProtestCommittee toolkit (methodology v. repo HEAD).
+Boats: <b>A</b> = AidanGoldfarb (slot 0, yellow hull), <b>Y</b> = Yahooz (slot 1, dark hull). Distances in game units (u) and hull lengths (BL = 24 u); hull modelled as measured from the renderer: bow +14 u, stern −10 u, beam 10 u.
+</div>
+
+<div class="verdict">
+<b>Decision.</b> <b>Yahooz broke rule 13 and rule 15.</b> She tacked from port to starboard inside the zone directly ahead of AidanGoldfarb, who was clear astern and closing at twice her speed, and while still tacking left AidanGoldfarb no room to keep clear: AidanGoldfarb had to luff from 37° to head to wind and tack, with the hulls 2.6 u (0.11 BL) apart. <b>AidanGoldfarb broke no rule</b> in the incident: she kept clear under rule 10 and then rule 13 by the only means available, and when she became the leeward right-of-way boat at t = 1298 she gave Yahooz room (rule 15), Yahooz never having to alter course. Rule 18 gives neither boat mark-room at the decisive moment (rules 18.1(a)(1) and 18.3). Yahooz did not take a penalty.
+<br><br>
+<b>Audit of the engine.</b> The engine's first call (t = 1294.5, Yahooz, rule 15, "Not enough time and space") is <b>correct in substance</b>. Its reversal 28.5 s later (t = 1323: Yahooz exonerated, AidanGoldfarb charged under rule 15 with no counterparty) is <b>not supported by any fact in the replay</b>: at t = 1323 no boat was within 32 u of AidanGoldfarb, nobody changed course, and AidanGoldfarb had held right of way since t = 1298. The One-Turn penalty AidanGoldfarb took at t = 1327–1341 was for a breach that did not occur.
+</div>
+
+<h2>1. Facts found</h2>
+<p>Wind from 352–358° throughout (close-hauled ≈ 307° on starboard, ≈ 37° on port). Positions are the boat's position point; "bow" = position + 14 u along heading, "stern" = position − 10 u. "Margin" is the distance of one boat's bow past the line abeam the other boat's stern (positive = overlapped, negative = clear astern). "Gap" is the shortest distance between the two hull centrelines (a 24 u segment each).</p>
+
+<table>
+<tr><th>t (s)</th><th>Event</th><th class="n">A tack / hdg</th><th class="n">Y tack / hdg</th><th class="n">A bow – mark</th><th class="n">Y bow – mark</th><th class="n">A bow vs Y stern line</th><th class="n">gap</th></tr>
+<tr><td>1236.4 / 1237.0</td><td>Y's bow, then A's bow, reach the zone (100.8 u). Overlapped both ways; Y 16 u to windward (inside), 11 u astern along A's axis.</td><td class="n">S 320°</td><td class="n">S 320°</td><td class="n">100.7</td><td class="n">99.2</td><td class="n">+35.0</td><td class="n">16.4</td></tr>
+<tr><td>1261.5</td><td>Y passes head to wind onto port, 60 u from the mark (in the zone).</td><td class="n">S 313°</td><td class="n">P (348→8°)</td><td class="n">79.7</td><td class="n">55.1</td><td class="n">+31.0</td><td class="n">18.4</td></tr>
+<tr><td>1264.7</td><td>A passes head to wind onto port, 74 u from the mark. No interaction (gap ≥ 18 u).</td><td class="n">P (342→2°)</td><td class="n">P 47°</td><td class="n">74.4</td><td class="n">46.9</td><td class="n">−4.1</td><td class="n">23.2</td></tr>
+<tr><td>1271–1291</td><td>Both on port. Y clear ahead; A sails lower and faster (62–77°, 7.3–8.5 kt vs Y 50–55° then 38°, 6.9–7.8 kt) and converges on Y's leeward quarter. Y never alters course to avoid A.</td><td class="n">P 62–77°</td><td class="n">P 55→38°</td><td class="n">49→29</td><td class="n">28→42</td><td class="n">−0.9 … −6.5</td><td class="n">23 → 3.9</td></tr>
+<tr><td>1291.3</td><td><b>Y passes head to wind onto starboard</b> at (31.7, 974), 36 u from the mark, A 25 u astern of her on port closing at 7.4 kt. Y slows 6.9 → 3.3 kt.</td><td class="n">P 42°</td><td class="n">P→S (358°)</td><td class="n">28.9</td><td class="n">42.1</td><td class="n">−1.9</td><td class="n">3.9</td></tr>
+<tr><td>1293</td><td>A's bow crosses Y's stern line while Y is still tacking (hdg 318°).</td><td class="n">P 37°</td><td class="n">tacking 318°</td><td class="n">33.6</td><td class="n">34.8</td><td class="n">+1.5</td><td class="n">4.1</td></tr>
+<tr><td>1294.0</td><td><b>Y reaches a close-hauled starboard course (307°).</b> A has luffed 37° → 17° (avoiding action); A's bow is at Y's stern quarter. <b>Figure 1.</b></td><td class="n">P 17°</td><td class="n">S 307°</td><td class="n">32.7</td><td class="n">32.2</td><td class="n">+6.8</td><td class="n"><b>2.6</b></td></tr>
+<tr><td>1295.3</td><td>A passes head to wind onto starboard, 30 u from the mark, 3.8 kt.</td><td class="n">P→S (357°)</td><td class="n">S 307°</td><td class="n">29.5</td><td class="n">33.8</td><td class="n">+7.8</td><td class="n">5.3</td></tr>
+<tr><td>1298.0</td><td>A on a close-hauled starboard course (307°), leeward of Y and overlapped. Y's course unchanged (307°). Gap opening.</td><td class="n">S 307°</td><td class="n">S 307°</td><td class="n">18.5</td><td class="n">36.5</td><td class="n">+8.7</td><td class="n">14.4</td></tr>
+<tr><td>1299–1309</td><td>A passes 17 u north of the mark at 1299–1300 sailing 302°; Y passes 32 u north sailing 307–308°. Both leave the mark to port. Gap 15 → 18 u.</td><td class="n">S 302°</td><td class="n">S 307°</td><td class="n">17.2 → 36.5</td><td class="n">37.9 → 62.8</td><td class="n">+7.7 → +3.5</td><td class="n">15 → 18</td></tr>
+<tr><td>1323</td><td>Engine reverses its call (see §4). A at (−55, 1001) sailing 288→298°, Y 39 u to windward sailing 311°, zinger 64 u away. No boat changes course.</td><td class="n">S 298°</td><td class="n">S 311°</td><td class="n">—</td><td class="n">—</td><td class="n">+2.3</td><td class="n">32</td></tr>
+<tr><td>1327–1341</td><td>A takes a One-Turn penalty (engine EXONERATION at 1337).</td><td colspan="6"></td></tr>
+</table>
+
+<figure>
+<img src="figs/fig1_t1294_closeup.jpg" alt="Replay viewer at t = 1294.0, close-up">
+<figcaption><b>Figure 1.</b> The game's replay viewer (<code>/race/d6509c47…/replay</code>, camera following AidanGoldfarb, seek wall-time 258 830 ms ≙ sim t = 1294.0 s, zoom ×3). Overlaid in the viewer's own coordinates: AidanGoldfarb's hull centreline (yellow) and bow point; Yahooz's hull centreline (cyan), stern point and the dashed line abeam her stern; the red tick is the shortest hull-to-hull distance, 2.6 u = 0.11 BL. AidanGoldfarb's bow is 6.8 u past Yahooz's stern line: she is overlapped to leeward-astern, on port, head 17°, while Yahooz has just reached a close-hauled starboard course. Nothing in the picture is generated; only the lines and labels are added.</figcaption>
+</figure>
+
+<figure>
+<img src="figs/fig2_t1294_wide.jpg" alt="Replay viewer at t = 1294.0, wide">
+<figcaption><b>Figure 2.</b> Same instant, zoomed out: the windward mark (right circle) and the offset mark (left circle) with their zones as drawn by the game. Both boats are inside the windward zone, about 32 u from the mark, with zinger on starboard to the east.</figcaption>
+</figure>
+
+<h2>2. Rules applied</h2>
+<ul>
+<li><b>Rule 18 (mark-room).</b> At zone entry (t ≈ 1237) the boats were overlapped with Yahooz inside, so rule 18.2(a)(1) obliged AidanGoldfarb to give Yahooz mark-room. That obligation ended under <b>rule 18.2(b)</b> when Yahooz passed head to wind at t = 1261.5, and from then until t = 1295.3 the boats were either on opposite tacks on a beat (<b>rule 18.1(a)(1)</b>: rule 18 does not apply) or on the same tack but not overlapped (rule 18.2(c) needs an overlap). From t = 1295.3, when AidanGoldfarb also passed head to wind from port to starboard in the zone of a mark to be left to port, <b>rule 18.3</b> applies: "rule 18.2 does not apply between her and another boat on starboard tack that is fetching the mark", and because Yahooz had <i>not</i> been on starboard tack since entering the zone (she tacked twice inside it), rule 18.3(a) and (b) impose nothing on AidanGoldfarb either. <b>Neither boat held mark-room at any point in the incident</b>; it is decided by Section A and B alone. (This is the 2025 change to rule 18.3: two boats that both tack in the zone get no mark-room between them.)</li>
+<li><b>Rule 13 (while tacking).</b> From t = 1291.3 (head to wind) to t = 1294.0 (close-hauled course, <i>Case 17</i>) Yahooz had to keep clear of AidanGoldfarb, and rules 10, 11 and 12 did not apply. A boat clear astern is entitled to hold her course and thereby prevent the boat ahead from tacking (<i>Case 15</i>). AidanGoldfarb held her course until t = 1293 and then had to luff 20° in one second and tack: Yahooz did not keep clear. <b>Yahooz broke rule 13.</b></li>
+<li><b>Rule 15 (acquiring right of way).</b> At t = 1294.0 Yahooz became the starboard-tack right-of-way boat under rule 10 by her own action and had to "initially give the other boat room to keep clear". With AidanGoldfarb's bow 2.6 u from her stern quarter and already luffing, there was no room; AidanGoldfarb's only escape was to pass head to wind, which is not "room to keep clear" in a seamanlike way (<i>Case 24</i>, <i>Case 27</i>). <b>Yahooz broke rule 15.</b> <i>Case 27</i> is directly on point: a boat that tacks on the layline a hull length ahead of a boat travelling fast breaks rule 13 (the avoiding action was needed before she reached close-hauled) and rule 15, and the other boat, which need not anticipate an illegal tack, is exonerated for her own rule 10 breach.</li>
+<li><b>Rules 10 and 43.1 for AidanGoldfarb.</b> While on port under a starboard boat (t = 1294.0–1295.3) AidanGoldfarb was bound by rule 10. If her luff-and-tack amounted to not keeping clear, she is exonerated under rule 43.1(a) (compelled by Yahooz's breach), exactly as BP was in <i>Case 27</i>. In any event she took the avoiding action that was available.</li>
+<li><b>Rule 13 for AidanGoldfarb (t = 1295.3–1298.0).</b> After passing head to wind she had to keep clear of Yahooz until close-hauled. Yahooz held 307° throughout and the gap grew from 2.9 u to 14.4 u. <b>She kept clear.</b></li>
+<li><b>Rule 15 for AidanGoldfarb (t = 1298.0).</b> On reaching a close-hauled starboard course she became the leeward right-of-way boat under rule 11 by her own action and had to initially give Yahooz room to keep clear. Yahooz was 14 u (0.6 BL) to windward, needed no change of course and made none (<i>Case 53</i>: the newly obligated boat must be allowed time to respond; here no response was required). <b>She gave room.</b> Rule 17 (she became overlapped to leeward from clear astern within two hull lengths) was also observed: she sailed 302°, below Yahooz's 307°.</li>
+<li><b>Rule 14.</b> No contact event is recorded and the game's contact model is unknown. At t = 1294.0 the hull centrelines were 2.6 u apart at Yahooz's stern quarter, where the hull is narrower than its 10 u midships beam, so contact is <i>possible but not established</i>. AidanGoldfarb acted to avoid it; Yahooz, who could have delayed her tack by two seconds, did not.</li>
+</ul>
+
+<h2>3. Conclusion</h2>
+<p><b>Yahooz was at fault.</b> She broke rules 13 and 15 by tacking inside the zone immediately ahead of a faster boat clear astern without leaving her room to keep clear. She took no penalty, so under rule 44.1 and rule 64.2 she would be penalised. <b>AidanGoldfarb broke no rule</b> in the incident; any technical rule 10 breach in the second before she passed head to wind is exonerated under rule 43.1(a). The One-Turn penalty AidanGoldfarb took at t = 1327–1341 was not required.</p>
+
+<h2>4. Audit of the engine's calls</h2>
+<table>
+<tr><th>t</th><th>Engine event</th><th>Committee</th><th>Basis</th></tr>
+<tr><td>1294.5</td><td>INFRACTION Yahooz, rule 15, counterparty AidanGoldfarb, "Not enough time and space"</td><td><b>AGREE</b> (substance)</td><td>Rule 15 at 1294.0; rule 13 for 1291.3–1294.0 is the sharper label (Case 27 charges both).</td></tr>
+<tr><td>1323.0</td><td>EXONERATION Yahooz (no penalty turn in her track)</td><td><b>DISAGREE</b></td><td>Yahooz took no penalty; nothing happened between 1294.5 and 1323 that removes her breach.</td></tr>
+<tr><td>1323.0</td><td>INFRACTION AidanGoldfarb, rule 15, no counterparty</td><td><b>DISAGREE</b></td><td>No boat within 32 u; no boat altered course; AidanGoldfarb had held right of way since 1298 and had given room then (Yahooz 14 u off, course unchanged). No fact supports a rule 15 breach.</td></tr>
+<tr><td>1337.0</td><td>EXONERATION AidanGoldfarb (penalty turn 1327–1341)</td><td>—</td><td>Penalty taken for a breach the facts do not show.</td></tr>
+<tr><td>1340.0</td><td>INFRACTION AidanGoldfarb, rule 11, counterparty zinger</td><td>out of scope</td><td>Occurred during the unnecessary penalty turn (rule 21.2 would apply to a boat taking a penalty); consequential on the 1323 call. Not reviewed here.</td></tr>
+</table>
+<p class="small">The same pattern — a rule 15 call with a reason string, then 18–28 s later an EXONERATION of that boat and a rule 15 INFRACTION against the original counterparty with no counterparty field — occurs twice in this race (also Outlaw181 / SethS at t = 1334.5 → 1352.5). It looks like a systematic "reversal" behaviour of the engine rather than two independent judgements, and it should be checked against the facts in the second instance as well. The toolkit's automatic assessors cover rules 10, 11, 12 and 22 only; the rule 13/15/18 analysis above was done by hand from the sample table in <code>cases/2026-10-27_race-d6509c47/window_slots0_1.csv</code>.</p>
+
+<h2>5. Sensitivity and limits</h2>
+<table>
+<tr><th>Finding</th><th>Measured hull (bow +14, stern −10)</th><th>Symmetric hull (±12)</th><th>Stale 33.6 u hull (±16.8)</th><th>Effect on verdict</th></tr>
+<tr><td>Yahooz clear ahead of AidanGoldfarb before her tack (t = 1286–1291)</td><td class="n">−6.5 … −1.9 u (clear ahead)</td><td class="n">−5.4 … −1.3 u (clear ahead)</td><td class="n">+3.1 … +6.9 u (overlapped)</td><td>None. If overlapped, AidanGoldfarb was the <i>leeward</i> boat on port and Yahooz would have had to keep clear under rule 11 as well; the decisive rules (13, 15) are unchanged.</td></tr>
+<tr><td>Hull gap at t = 1294.0</td><td class="n">2.6 u = 0.11 BL (2.9 u at the 1294 sample)</td><td class="n">4.8 u</td><td class="n">0.2 u</td><td>None; "no room to keep clear" holds for any model.</td></tr>
+<tr><td>Yahooz close-hauled at 1294.0 vs AidanGoldfarb's luff onset (between 1293 and 1294)</td><td colspan="3">Indeterminate at 1 Hz (±0.5 s)</td><td>Decides whether the moment of crowding falls under rule 13 or rule 15; Yahooz is the keep-clear / room-giving boat under either.</td></tr>
+<tr><td>Zone-entry order (Y 1236.4, A 1237.0, interpolated)</td><td colspan="3">0.6 s apart; the boats were overlapped at both instants</td><td>None after t = 1261.5 (rule 18.2(b)).</td></tr>
+</table>
+<p class="small">Assumptions: wind direction from the sample's <code>w</code> field; close-hauled taken as 45° off the wind, which matches the fleet's headings (307°/37°); positions linearly interpolated between 1 Hz samples for the head-to-wind and zone-entry instants; the engine's collision model is unknown, so contact is labelled "modelled". Whether the engine's rule assignment uses the same hull offsets as the renderer is unconfirmed (methodology §8).</p>
+
+<h2>6. References</h2>
+<ul class="small">
+<li>RRS 2025–2028 rules 10, 11, 12, 13, 14, 15, 17, 18.1, 18.2, 18.3, 43.1, 44.1 (text as published at racingrulesofsailing.org, Part 2 Sections A–C, checked 2026-10-27).</li>
+<li>World Sailing Case Book 2025–2028: <b>Case 15</b> (boat clear astern may hold her course and prevent the boat ahead from tacking; rule 18 ceases on opposite tacks on a beat), <b>Case 17</b> (rule 13 ends when on a close-hauled course), <b>Case 24</b> (room to keep clear means room to do so in a seamanlike way), <b>Case 27</b> (tacking on the layline ahead of a fast boat: rules 13 and 15 broken; the other boat need not anticipate the breach and is exonerated), <b>Case 53</b> (rule 15 implies time to respond).</li>
+<li>Appendix M principles: facts stated definitely; diagrams from the game's own viewer; limits of 1 Hz evidence declared.</li>
+<li>Data: <code>cases/2026-10-27_race-d6509c47/</code> (sample window, events, figures).</li>
+</ul>
+
+</body>
+</html>

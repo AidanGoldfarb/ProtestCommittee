@@ -1,0 +1,8 @@
+INFRACTION|1294500|Yahooz|15|AidanGoldfarb||Not enough time and space
+EXONERATION|1323000|Yahooz||||
+INFRACTION|1323000|AidanGoldfarb|15|||
+EXONERATION|1337000|AidanGoldfarb||||
+INFRACTION|1340000|AidanGoldfarb|11|zinger||
+EXONERATION|1372000|AidanGoldfarb||||
+MARK_TOUCH|1649500|Yahooz|31||LWS|
+EXONERATION|1668500|Yahooz||||
